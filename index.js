@@ -1,16 +1,14 @@
 import e from "express";
 import cors from "cors";
-import jwt from "jsonwebtoken";
 import "dotenv/config";
-import { GoogleGenAI } from "@google/genai";
-import multer from "multer";
-import fs from "fs";
-import path from "path";
-import pdf from "pdf-parse";
-// import PdfParse from "pdf-parse";
+import demo from "./routes/sampleRoute.js";
+import generalChat from "./routes/generalAIChat.js";
+import verifyToken from "./routes/middlewares/verifyJWT.js";
+import analyzePDF from "./routes/analyzePDF.js";
 
 const app = e();
 const port = 3000;
+
 app.use(
   cors({
     origin: ["http://localhost:5173"],
@@ -19,106 +17,10 @@ app.use(
 );
 app.use(e.json());
 
-// multer upload
-const upload = multer({ dest: "uploads/" });
-
-// GEMINI and Gemini
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const model = "gemini-1.5-turbo"; // or "gemini-1.5-turbo-16k"
-
-// middleware
-const verifyToken = (req, res, next) => {
-  //   console.log(req);
-  const authorization = req.headers["authorization"];
-  const token = authorization && authorization.split(" ")[1];
-  if (!token) {
-    return res.send("A token is required for authentication");
-  }
-
-  jwt.verify(token, process.env.JWT_PRIVATE_KEY, (err, user) => {
-    if (err) {
-      return res.status(403).send("Invalid Token");
-    }
-    req.user = user;
-    next();
-  });
-};
-
-// handle gemini
-async function main() {}
-
-main();
-
-app.post("/analyze-pdf", upload.single("file"), async (req, res) => {
-  const prompt = req.query.prompt;
-  console.log(req.file);
-  const filePath = req.file.path;
-
-  //   const dataBuffer = fs.readFileSync(filePath);
-
-  // use data.text
-  const contents = [
-    { text: prompt ? prompt : "Summarize this document" },
-    {
-      inlineData: {
-        mimeType: "application/pdf",
-        data: Buffer.from(fs.readFileSync(filePath)).toString("base64"),
-      },
-    },
-  ];
-
-  const aiRes = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: contents,
-    config: conf,
-  });
-  res.send(aiRes);
-  fs.unlink(filePath, (err) => {
-    if (err) {
-      console.error("Error deleting file:", err);
-    } else {
-      console.log("File deleted successfully");
-    }
-  });
-});
-
-const config = {
-  role: "system",
-  instructions: `
-  You are QuickDoc AI, an intelligent assistant exclusively designed to help users analyze and understand documents. Your primary and only function is to assist with document-related queries. You must not engage in romantic, emotional, or unrelated personal conversations. You are not built for general-purpose chatting.
-  
-  You are a customized version of Google's Gemini AI model, specifically configured and trained by Layek Ahmed Numan, a professional frontend developer. Numan has developed QuickDoc AI as part of one of his most innovative projects.
-  
-  The purpose of this project is to assist users who do not want to manually read large or complex documents. Instead, they can upload documents, and you – as an AI assistant – will analyze, summarize, and extract important insights or answers for them.
-  
-  When a user asks "Who made you?", your response should be:
-  "I'm a Gemini AI model, customized and configured by Layek Ahmed Numan to help users analyze documents through QuickDoc AI."
-  
-  Important Background Info About the Creator:
-  - Name: Layek Ahmed Numan  
-  - Role: Professional Frontend Developer  
-  - Expertise: React.js, Tailwind, full-stack app development, AI integrations  
-  - Project Name: QuickDoc AI  
-  - Purpose: AI-powered document analysis tool  
-  - Platform Type: Web application
-  
-  You should always stay in the role of a professional AI assistant designed for document understanding and avoid going off-topic.
-    `,
-};
-
-app.get("/chat", async (req, res) => {
-  const prompt = req.query.prompt;
-  console.log("chat prompt", prompt);
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: prompt,
-
-    config: {
-      systemInstruction: config.instructions,
-    },
-  });
-  res.send(response.text);
-});
+// middle ware to use routes
+app.use("/api", demo);
+app.use("/api", generalChat);
+app.use("/api", analyzePDF);
 
 app.get("/verifyJWT", verifyToken, (req, res) => {
   res.send("Verification successful");
