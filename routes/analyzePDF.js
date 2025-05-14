@@ -7,7 +7,8 @@ import verifyToken from "./middlewares/verifyJWT.js";
 const analyzePDF = e.Router();
 
 // saving file to upload folder with multer
-const upload = multer({ dest: "./uploads/" });
+// const upload = multer({ dest: "./uploads/" });
+const upload = multer({ storage: multer.memoryStorage() });
 
 // api for analyzing pdf
 analyzePDF.post(
@@ -19,6 +20,8 @@ analyzePDF.post(
     console.log(prompt);
     // getting the file path
     const filePath = req.file.path;
+    const fileBuffer = req.file.buffer;
+    const base64File = fileBuffer.toString("base64");
     try {
       console.log(filePath);
 
@@ -28,7 +31,7 @@ analyzePDF.post(
         {
           inlineData: {
             mimeType: "application/pdf",
-            data: Buffer.from(fs.readFileSync(filePath)).toString("base64"),
+            data: base64File,
           },
         },
       ];

@@ -8,7 +8,7 @@ import analyzePDF from "./routes/analyzePDF.js";
 import rateLimit from "express-rate-limit";
 
 const app = e();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // request limit handler
 const reqLimit = rateLimit({
@@ -33,8 +33,8 @@ app.use("/api", demo);
 app.use("/api", generalChat);
 app.use("/api", analyzePDF);
 
-app.get("/verifyJWT", verifyToken, (req, res) => {
-  res.send("Verification successful");
+app.get("/", (req, res) => {
+  res.send("working");
 });
 
 app.listen(port, () => {
